@@ -61,7 +61,7 @@ jsdoc-builder example.ts
 
 ```typescript
 /**
- * @description Function add
+ * @description Press Your { Function add } Description
  * @param {number} a
  * @param {number} b
  * @returns {void}
@@ -71,7 +71,7 @@ function add(a: number, b: number) {
 }
 
 /**
- * @description Function multiply
+ * @description Press Your { Function multiply } Description
  * @param {number} a
  * @param {number} b
  * @returns {number}
