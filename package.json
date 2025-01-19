@@ -11,11 +11,13 @@
   ],
   "license": "MIT",
   "keywords": [
+    "jsdoc-generator",
     "jsdoc",
     "typescript",
     "javascript",
     "documentation",
-    "cli"
+    "cli",
+    "auto-jsdoc"
   ],
   "scripts": {
     "build": "tsc",
