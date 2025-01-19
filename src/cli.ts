@@ -3,7 +3,7 @@ import { program } from "commander";
 import { generateJSDoc } from "./index";
 
 program
-  .command("generate <file>")
+  .argument("<file>", "The TypeScript or JavaScript file to process")
   .description(
     "Generate JSDoc comments for the given TypeScript or JavaScript file"
   )

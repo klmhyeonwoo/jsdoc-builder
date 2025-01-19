@@ -1,11 +1,22 @@
 {
-  "name": "jsdoc-generator",
+  "name": "jsdoc-builder",
   "version": "0.0.1",
   "author": "dori",
   "description": "Generate JSDoc comments for JavaScript and TypeScript files.",
   "bin": {
-    "jsdoc-generator": "./dist/cli.js"
+    "jsdoc-builder": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "jsdoc",
+    "typescript",
+    "javascript",
+    "documentation",
+    "cli"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/cli.js",
