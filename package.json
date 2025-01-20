@@ -1,8 +1,19 @@
 {
   "name": "jsdoc-builder",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "dori",
   "description": "Generate JSDoc comments for JavaScript and TypeScript files.",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klmhyeonwoo/jsdoc-builder"
+  },
+  "homepage": "https://github.com/klmhyeonwoo/jsdoc-builder#readme",
+  "bugs": {
+    "url": "https://github.com/klmhyeonwoo/jsdoc-builder/issues"
+  },
   "bin": {
     "jsdoc-builder": "./dist/cli.js"
   },
@@ -12,12 +23,13 @@
   "license": "MIT",
   "keywords": [
     "jsdoc-generator",
-    "jsdoc",
-    "typescript",
-    "javascript",
-    "documentation",
-    "cli",
-    "auto-jsdoc"
+    "documentation-generator",
+    "auto-jsdoc",
+    "typescript-docs",
+    "typescript-jsdoc",
+    "javascript-documentation",
+    "cli-tool",
+    "developer-tools"
   ],
   "scripts": {
     "build": "tsc",
