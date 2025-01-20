@@ -16,7 +16,8 @@ export function generateJSDoc(filePath: string): void {
 
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
-  function visit(node: ts.Node): ts.Node {
+  // Visit function that processes each node
+  function visit(node: ts.Node, context: ts.TransformationContext): ts.Node {
     if (ts.isFunctionDeclaration(node) && node.name) {
       const jsDoc = createJSDoc(node.name.text, node.parameters, node.type);
       ts.addSyntheticLeadingComment(
@@ -56,32 +57,20 @@ export function generateJSDoc(filePath: string): void {
       return node;
     }
 
-    return ts.visitEachChild(node, visit, context);
+    return ts.visitEachChild(node, (child) => visit(child, context), context); // Pass context to visit
   }
 
-  // Create a transformation context
-  const context: ts.TransformationContext = {
-    factory: ts.factory,
-    startLexicalEnvironment: () => {},
-    endLexicalEnvironment: () => [],
-    suspendLexicalEnvironment: () => {},
-    resumeLexicalEnvironment: () => {},
-    requestEmitHelper: () => {},
-    readEmitHelpers: () => undefined,
-    enableSubstitution: () => {},
-    isSubstitutionEnabled: () => false,
-    onSubstituteNode: (hint, node) => node,
-    enableEmitNotification: () => {},
-    isEmitNotificationEnabled: () => false,
-    onEmitNode: (hint, node, emitCallback) => emitCallback(hint, node),
-    getCompilerOptions: () => ({} as ts.CompilerOptions),
-    hoistFunctionDeclaration: () => {},
-    hoistVariableDeclaration: () => {},
+  // Create the transformer
+  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
+    return (sourceFile) => {
+      return ts.visitNode(sourceFile, (node) =>
+        visit(node, context)
+      ) as ts.SourceFile; // Pass context to visit
+    };
   };
 
-  const result = ts.transform(sourceFile, [
-    (context) => (rootNode) => ts.visitNode(rootNode, visit),
-  ]);
+  // Apply the transformer
+  const result = ts.transform(sourceFile, [transformer]);
   const transformedSourceFile = result.transformed[0] as ts.SourceFile;
   const updatedCode = printer.printFile(transformedSourceFile);
 
