@@ -18,7 +18,8 @@
     "jsdoc-builder": "./dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "example"
   ],
   "license": "MIT",
   "keywords": [

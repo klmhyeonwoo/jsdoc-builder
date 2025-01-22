@@ -1,0 +1,8 @@
+**/.*
+*.lock
+config/
+public/
+src/
+tsconfig.json
+node_modules/
+examples
