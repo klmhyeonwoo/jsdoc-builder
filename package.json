@@ -1,6 +1,6 @@
 {
   "name": "jsdoc-builder",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "dori",
   "description": "Generate JSDoc comments for JavaScript and TypeScript files.",
   "publishConfig": {
@@ -39,7 +39,6 @@
   },
   "dependencies": {
     "commander": "^10.0.0",
-    "jsdoc-builder": "^0.0.3",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
