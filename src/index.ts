@@ -3,6 +3,7 @@ import * as fs from "fs";
 
 /**
  * Parses a TypeScript or JavaScript file and adds JSDoc comments to functions.
+ * Skips functions that already have JSDoc comments.
  * @param filePath - The path of the file to process.
  */
 export function generateJSDoc(filePath: string): void {
@@ -16,9 +17,8 @@ export function generateJSDoc(filePath: string): void {
 
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
-  // Visit function that processes each node
   function visit(node: ts.Node, context: ts.TransformationContext): ts.Node {
-    if (ts.isFunctionDeclaration(node) && node.name) {
+    if (ts.isFunctionDeclaration(node) && node.name && !hasJSDoc(node)) {
       const jsDoc = createJSDoc(node.name.text, node.parameters, node.type);
       ts.addSyntheticLeadingComment(
         node,
@@ -29,11 +29,11 @@ export function generateJSDoc(filePath: string): void {
       return node;
     }
 
-    // Check for arrow functions assigned to a constant
     if (
       ts.isVariableDeclaration(node) &&
       node.initializer &&
-      ts.isArrowFunction(node.initializer)
+      ts.isArrowFunction(node.initializer) &&
+      !hasJSDoc(node.parent.parent) // VariableStatement에 JSDoc이 있는지 확인
     ) {
       const jsDoc = createJSDoc(
         node.name.getText(),
@@ -41,40 +41,40 @@ export function generateJSDoc(filePath: string): void {
         node.initializer.type
       );
 
-      // Add JSDoc to the entire variable statement for clarity
-      const parent = node.parent;
-      if (
-        ts.isVariableDeclarationList(parent) &&
-        parent.declarations.length === 1
-      ) {
-        ts.addSyntheticLeadingComment(
-          parent.parent,
-          ts.SyntaxKind.MultiLineCommentTrivia,
-          jsDoc.comment,
-          true
-        );
-      }
+      ts.addSyntheticLeadingComment(
+        node.parent.parent,
+        ts.SyntaxKind.MultiLineCommentTrivia,
+        jsDoc.comment,
+        true
+      );
       return node;
     }
 
-    return ts.visitEachChild(node, (child) => visit(child, context), context); // Pass context to visit
+    return ts.visitEachChild(node, (child) => visit(child, context), context);
   }
 
-  // Create the transformer
   const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
     return (sourceFile) => {
       return ts.visitNode(sourceFile, (node) =>
         visit(node, context)
-      ) as ts.SourceFile; // Pass context to visit
+      ) as ts.SourceFile;
     };
   };
 
-  // Apply the transformer
   const result = ts.transform(sourceFile, [transformer]);
   const transformedSourceFile = result.transformed[0] as ts.SourceFile;
   const updatedCode = printer.printFile(transformedSourceFile);
 
   fs.writeFileSync(filePath, updatedCode, "utf-8");
+}
+
+/**
+ * Checks if a node already has JSDoc comments.
+ * @param node - The TypeScript AST node to check.
+ * @returns Whether the node has JSDoc.
+ */
+function hasJSDoc(node: ts.Node): boolean {
+  return !!ts.getJSDocTags(node).length;
 }
 
 /**
