@@ -1,12 +1,39 @@
 import * as ts from "typescript";
 import * as fs from "fs";
+import { AIService, AIConfig } from "./ai-service";
+
+export interface GenerateJSDocOptions {
+  aiEnabled?: boolean;
+  apiKey?: string;
+  model?: string;
+}
 
 /**
  * Parses a TypeScript or JavaScript file and adds JSDoc comments to functions.
  * Skips functions that already have JSDoc comments.
  * @param filePath - The path of the file to process.
+ * @param options - Options for AI-powered generation
  */
-export function generateJSDoc(filePath: string): void {
+export async function generateJSDoc(
+  filePath: string,
+  options: GenerateJSDocOptions = {}
+): Promise<void> {
+  const aiConfig: AIConfig = {
+    enabled: options.aiEnabled || false,
+    apiKey: options.apiKey,
+    model: options.model,
+  };
+
+  const aiService = new AIService(aiConfig);
+
+  if (aiService.isEnabled()) {
+    console.log(
+      `AI-powered description generation enabled using model: ${
+        options.model || "gpt-3.5-turbo"
+      }`
+    );
+  }
+
   const sourceCode = fs.readFileSync(filePath, "utf-8");
   const sourceFile = ts.createSourceFile(
     filePath,
@@ -15,57 +42,67 @@ export function generateJSDoc(filePath: string): void {
     true
   );
 
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  // Collect all positions and JSDoc comments to insert
+  const insertions: { pos: number; comment: string }[] = [];
 
-  function visit(node: ts.Node, context: ts.TransformationContext): ts.Node {
+  async function processNodes(node: ts.Node): Promise<void> {
     if (ts.isFunctionDeclaration(node) && node.name && !hasJSDoc(node)) {
-      const jsDoc = createJSDoc(node.name.text, node.parameters, node.type);
-      ts.addSyntheticLeadingComment(
-        node,
-        ts.SyntaxKind.MultiLineCommentTrivia,
-        jsDoc.comment,
-        true
+      const functionCode = node.getText(sourceFile);
+      const jsDoc = await createJSDoc(
+        node.name.text,
+        node.parameters,
+        node.type,
+        functionCode,
+        aiService
       );
-      return node;
+
+      // Get the actual start position (excluding leading trivia)
+      const pos = node.getStart(sourceFile);
+      insertions.push({ pos, comment: jsDoc.fullComment });
     }
 
     if (
       ts.isVariableDeclaration(node) &&
       node.initializer &&
       ts.isArrowFunction(node.initializer) &&
-      !hasJSDoc(node.parent.parent) // VariableStatement에 JSDoc이 있는지 확인
+      !hasJSDoc(node.parent.parent)
     ) {
-      const jsDoc = createJSDoc(
+      const functionCode = node.initializer.getText(sourceFile);
+      const jsDoc = await createJSDoc(
         node.name.getText(),
         node.initializer.parameters,
-        node.initializer.type
+        node.initializer.type,
+        functionCode,
+        aiService
       );
 
-      ts.addSyntheticLeadingComment(
-        node.parent.parent,
-        ts.SyntaxKind.MultiLineCommentTrivia,
-        jsDoc.comment,
-        true
-      );
-      return node;
+      // Get the actual start position of the variable statement
+      const pos = node.parent.parent.getStart(sourceFile);
+      insertions.push({ pos, comment: jsDoc.fullComment });
     }
 
-    return ts.visitEachChild(node, (child) => visit(child, context), context);
+    // Recursively process children
+    const children = node.getChildren(sourceFile);
+    for (const child of children) {
+      await processNodes(child);
+    }
   }
 
-  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
-    return (sourceFile) => {
-      return ts.visitNode(sourceFile, (node) =>
-        visit(node, context)
-      ) as ts.SourceFile;
-    };
-  };
+  await processNodes(sourceFile);
 
-  const result = ts.transform(sourceFile, [transformer]);
-  const transformedSourceFile = result.transformed[0] as ts.SourceFile;
-  const updatedCode = printer.printFile(transformedSourceFile);
+  // Sort insertions by position in reverse order (so we can insert without affecting positions)
+  insertions.sort((a, b) => b.pos - a.pos);
+
+  let updatedCode = sourceCode;
+  for (const insertion of insertions) {
+    updatedCode =
+      updatedCode.substring(0, insertion.pos) +
+      insertion.comment +
+      updatedCode.substring(insertion.pos);
+  }
 
   fs.writeFileSync(filePath, updatedCode, "utf-8");
+  console.log(`JSDoc comments have been added to ${filePath}`);
 }
 
 /**
@@ -82,13 +119,17 @@ function hasJSDoc(node: ts.Node): boolean {
  * @param functionName - The name of the function.
  * @param parameters - The parameters of the function.
  * @param returnType - The return type of the function.
+ * @param functionCode - The function code for AI context.
+ * @param aiService - The AI service instance.
  * @returns A JSDoc comment as a string.
  */
-function createJSDoc(
+async function createJSDoc(
   functionName: string,
   parameters: ts.NodeArray<ts.ParameterDeclaration>,
-  returnType?: ts.TypeNode
-): { comment: string } {
+  returnType: ts.TypeNode | undefined,
+  functionCode: string,
+  aiService: AIService
+): Promise<{ comment: string; fullComment: string }> {
   const paramTags = parameters.map((param) => ({
     tagName: "param",
     name: param.name.getText(),
@@ -100,11 +141,27 @@ function createJSDoc(
     type: returnType ? returnType.getText() : "void",
   };
 
+  let description: string;
+
+  if (aiService.isEnabled()) {
+    description = await aiService.generateDescription(
+      functionName,
+      paramTags.map((p) => ({ name: p.name, type: p.type })),
+      returnTag.type,
+      functionCode
+    );
+  } else {
+    description = `Press Your { Function ${functionName} } Description`;
+  }
+
   const commentText = [
-    `* @description Press Your { Function ${functionName} } Description`,
-    ...paramTags.map((tag) => `* @param {${tag.type}} ${tag.name}`),
-    `* @returns {${returnTag.type}}`,
+    ` * @description ${description}`,
+    ...paramTags.map((tag) => ` * @param {${tag.type}} ${tag.name}`),
+    ` * @returns {${returnTag.type}}`,
   ].join("\n");
 
-  return { comment: `*\n${commentText}\n` };
+  const fullComment = `/**\n${commentText}\n */\n`;
+
+  return { comment: `*\n${commentText}\n`, fullComment };
 }
+
