@@ -17,6 +17,12 @@ export function generateJSDoc(filePath: string): void {
 
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
+  /**
+   * Visits each node in the AST and adds JSDoc comments to functions that don't have them.
+   * @param node - The TypeScript AST node to visit.
+   * @param context - The transformation context.
+   * @returns The transformed node.
+   */
   function visit(node: ts.Node, context: ts.TransformationContext): ts.Node {
     if (ts.isFunctionDeclaration(node) && node.name && !hasJSDoc(node)) {
       const jsDoc = createJSDoc(node.name.text, node.parameters, node.type);
