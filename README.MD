@@ -1,6 +1,6 @@
 # JSDoc Builder
 
-JSDoc Builder is a CLI tool for automatically generating JSDoc comments for JavaScript and TypeScript files. It parses functions and variables to infer parameter types, return types, and descriptions, and then inserts JSDoc comments directly into the source code.
+JSDoc Builder is a CLI tool for automatically generating JSDoc comments for JavaScript, TypeScript, JSX, TSX, and Vue files. It parses functions and variables to infer parameter types, return types, and descriptions, and then inserts JSDoc comments directly into the source code.
 
 ## Features
 
@@ -8,8 +8,15 @@ JSDoc Builder is a CLI tool for automatically generating JSDoc comments for Java
   - Function declarations
   - Arrow functions
   - TypeScript types and interfaces
+- Supports multiple file formats:
+  - JavaScript (`.js`)
+  - TypeScript (`.ts`)
+  - JSX (`.jsx`)
+  - TSX (`.tsx`)
+  - Vue Single File Components (`.vue`)
 - Infers parameter and return types from TypeScript annotations.
 - Outputs clean and structured JSDoc comments.
+- Preserves Vue SFC structure (template, script, and style sections).
 
 ## Installation
 
@@ -35,7 +42,7 @@ Run the following command to generate JSDoc comments for a file:
 jsdoc-builder <file-path>
 ```
 
-Replace `<file-path>` with the path to the JavaScript or TypeScript file you want to process.
+Replace `<file-path>` with the path to the JavaScript, TypeScript, JSX, TSX, or Vue file you want to process.
 
 ### Example
 
@@ -79,6 +86,103 @@ function add(a: number, b: number) {
 const multiply = (a: number, b: number): number => {
   return a * b;
 };
+```
+
+### JSX Example
+
+#### Input File (`example.jsx`):
+
+```jsx
+function Component(props) {
+  return <div>{props.title}</div>;
+}
+
+const ArrowComponent = (props) => {
+  return <div>{props.content}</div>;
+};
+```
+
+#### Command:
+
+```bash
+jsdoc-builder example.jsx
+```
+
+#### Output File (`example.jsx`):
+
+```jsx
+/**
+ * @description Press Your { Function Component } Description
+ * @param {any} props
+ * @returns {void}
+ */
+function Component(props) {
+  return <div>{props.title}</div>;
+}
+
+/**
+ * @description Press Your { Function ArrowComponent } Description
+ * @param {any} props
+ * @returns {void}
+ */
+const ArrowComponent = (props) => {
+  return <div>{props.content}</div>;
+};
+```
+
+### Vue Example
+
+#### Input File (`example.vue`):
+
+```vue
+<template>
+  <div>{{ message }}</div>
+</template>
+
+<script>
+function greet(name) {
+  return `Hello, ${name}`;
+}
+
+export default {
+  name: 'ExampleComponent',
+  setup() {
+    return { greet };
+  }
+}
+</script>
+```
+
+#### Command:
+
+```bash
+jsdoc-builder example.vue
+```
+
+#### Output File (`example.vue`):
+
+```vue
+<template>
+  <div>{{ message }}</div>
+</template>
+
+<script>
+/**
+ * @description Press Your { Function greet } Description
+ * @param {any} name
+ * @returns {void}
+ */
+function greet(name) {
+  return `Hello, ${name}`;
+}
+
+export default {
+  name: 'ExampleComponent',
+  setup() {
+    return { greet };
+  }
+}
+</script>
 ```
 
 ## API
