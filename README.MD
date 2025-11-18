@@ -9,6 +9,7 @@ JSDoc Builder is a CLI tool for automatically generating JSDoc comments for Java
   - Arrow functions
   - TypeScript types and interfaces
 - Infers parameter and return types from TypeScript annotations.
+- **AI-Powered Descriptions**: Use OpenAI to generate meaningful function descriptions automatically.
 - Outputs clean and structured JSDoc comments.
 
 ## Installation
@@ -27,7 +28,7 @@ npm install jsdoc-builder --save-dev
 
 ## Usage
 
-### CLI Command
+### Basic Usage (Without AI)
 
 Run the following command to generate JSDoc comments for a file:
 
@@ -36,6 +37,33 @@ jsdoc-builder <file-path>
 ```
 
 Replace `<file-path>` with the path to the JavaScript or TypeScript file you want to process.
+
+### AI-Powered Usage
+
+To enable AI-powered description generation using OpenAI:
+
+```bash
+jsdoc-builder <file-path> --ai --api-key YOUR_OPENAI_API_KEY
+```
+
+Or set the API key as an environment variable:
+
+```bash
+export OPENAI_API_KEY=your_api_key_here
+jsdoc-builder <file-path> --ai
+```
+
+You can also specify a different model:
+
+```bash
+jsdoc-builder <file-path> --ai --model gpt-4
+```
+
+### CLI Options
+
+- `--ai` - Enable AI-powered description generation
+- `--api-key <key>` - OpenAI API key (can also be set via `OPENAI_API_KEY` environment variable)
+- `--model <model>` - AI model to use (default: `gpt-3.5-turbo`)
 
 ### Example
 
@@ -51,7 +79,7 @@ const multiply = (a: number, b: number): number => {
 };
 ```
 
-#### Command:
+#### Basic Command (Without AI):
 
 ```bash
 jsdoc-builder example.ts
@@ -72,6 +100,39 @@ function add(a: number, b: number) {
 
 /**
  * @description Press Your { Function multiply } Description
+ * @param {number} a
+ * @param {number} b
+ * @returns {number}
+ */
+const multiply = (a: number, b: number): number => {
+  return a * b;
+};
+```
+
+#### AI-Powered Command:
+
+```bash
+export OPENAI_API_KEY=your_api_key_here
+jsdoc-builder example.ts --ai
+```
+
+#### AI-Generated Output:
+
+The AI will generate contextual descriptions based on the function code, parameter names, and types:
+
+```typescript
+/**
+ * @description Adds two numbers and returns their sum
+ * @param {number} a
+ * @param {number} b
+ * @returns {number}
+ */
+function add(a: number, b: number) {
+  return a + b;
+}
+
+/**
+ * @description Multiplies two numbers and returns the product
  * @param {number} a
  * @param {number} b
  * @returns {number}
