@@ -2,7 +2,7 @@
   "name": "jsdoc-builder",
   "version": "0.0.6",
   "author": "dori",
-  "description": "Generate JSDoc comments for JavaScript and TypeScript files.",
+  "description": "Generate JSDoc comments for JavaScript, TypeScript, JSX, TSX, and Vue files.",
   "publishConfig": {
     "access": "public"
   },
@@ -29,6 +29,11 @@
     "typescript-docs",
     "typescript-jsdoc",
     "javascript-documentation",
+    "jsx-documentation",
+    "tsx-documentation",
+    "vue-documentation",
+    "react-jsdoc",
+    "vue-jsdoc",
     "cli-tool",
     "developer-tools"
   ],

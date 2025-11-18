@@ -1,5 +1,6 @@
 import * as ts from "typescript";
 import * as fs from "fs";
+import * as path from "path";
 import { AIService, AIConfig } from "./ai-service";
 
 export interface GenerateJSDocOptions {
@@ -9,7 +10,7 @@ export interface GenerateJSDocOptions {
 }
 
 /**
- * Parses a TypeScript or JavaScript file and adds JSDoc comments to functions.
+ * Parses a TypeScript, JavaScript, JSX, TSX, or Vue file and adds JSDoc comments to functions.
  * Skips functions that already have JSDoc comments.
  * @param filePath - The path of the file to process.
  * @param options - Options for AI-powered generation
@@ -34,12 +35,54 @@ export async function generateJSDoc(
     );
   }
 
-  const sourceCode = fs.readFileSync(filePath, "utf-8");
+  const ext = path.extname(filePath).toLowerCase();
+  let sourceCode = fs.readFileSync(filePath, "utf-8");
+  let isVueFile = false;
+  let vueTemplate = "";
+  let vueScriptContent = "";
+  let vueStyle = "";
+  let scriptStartPos = 0;
+
+  // Handle Vue SFC (Single File Component)
+  if (ext === ".vue") {
+    isVueFile = true;
+    const scriptMatch = sourceCode.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i);
+    const templateMatch = sourceCode.match(/<template[^>]*>([\s\S]*?)<\/template\s*>/i);
+    const styleMatch = sourceCode.match(/<style[^>]*>([\s\S]*?)<\/style\s*>/i);
+
+    if (scriptMatch) {
+      vueScriptContent = scriptMatch[1];
+      scriptStartPos = scriptMatch.index! + scriptMatch[0].indexOf(scriptMatch[1]);
+    }
+    if (templateMatch) {
+      vueTemplate = templateMatch[0];
+    }
+    if (styleMatch) {
+      vueStyle = styleMatch[0];
+    }
+
+    sourceCode = vueScriptContent || "";
+  }
+
+  // Determine the appropriate ScriptKind based on file extension
+  let scriptKind = ts.ScriptKind.TS;
+  if (ext === ".js" || ext === ".mjs" || ext === ".cjs") {
+    scriptKind = ts.ScriptKind.JS;
+  } else if (ext === ".jsx") {
+    scriptKind = ts.ScriptKind.JSX;
+  } else if (ext === ".tsx") {
+    scriptKind = ts.ScriptKind.TSX;
+  } else if (ext === ".vue") {
+    // For Vue files, treat the script section as JS
+    scriptKind = ts.ScriptKind.JS;
+  }
+
   const sourceFile = ts.createSourceFile(
     filePath,
     sourceCode,
     ts.ScriptTarget.Latest,
-    true
+    true,
+    scriptKind
   );
 
   // Collect all positions and JSDoc comments to insert
@@ -99,6 +142,30 @@ export async function generateJSDoc(
       updatedCode.substring(0, insertion.pos) +
       insertion.comment +
       updatedCode.substring(insertion.pos);
+  }
+
+  // For Vue files, reconstruct the SFC structure
+  if (isVueFile) {
+    const originalFileContent = fs.readFileSync(filePath, "utf-8");
+    const scriptMatch = originalFileContent.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i);
+    
+    if (scriptMatch) {
+      const scriptTag = scriptMatch[0];
+      const scriptOpenTag = scriptTag.substring(0, scriptTag.indexOf(scriptMatch[1]));
+      const scriptCloseTag = "</script>";
+      
+      // Reconstruct the Vue file
+      const parts = [];
+      if (vueTemplate) {
+        parts.push(vueTemplate);
+      }
+      parts.push(`${scriptOpenTag}${updatedCode}${scriptCloseTag}`);
+      if (vueStyle) {
+        parts.push(vueStyle);
+      }
+      
+      updatedCode = parts.join("\n\n");
+    }
   }
 
   fs.writeFileSync(filePath, updatedCode, "utf-8");

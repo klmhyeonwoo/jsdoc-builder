@@ -3,9 +3,9 @@ import { program } from "commander";
 import { generateJSDoc } from "./index";
 
 program
-  .argument("<file>", "The TypeScript or JavaScript file to process")
+  .argument("<file>", "The TypeScript, JavaScript, JSX, TSX, or Vue file to process")
   .description(
-    "Generate JSDoc comments for the given TypeScript or JavaScript file"
+    "Generate JSDoc comments for the given TypeScript, JavaScript, JSX, TSX, or Vue file"
   )
   .option("--ai", "Enable AI-powered description generation")
   .option(
