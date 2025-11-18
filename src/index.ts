@@ -19,9 +19,9 @@ export function generateJSDoc(filePath: string): void {
   // Handle Vue SFC (Single File Component)
   if (ext === ".vue") {
     isVueFile = true;
-    const scriptMatch = sourceCode.match(/<script[^>]*>([\s\S]*?)<\/script>/);
-    const templateMatch = sourceCode.match(/<template>([\s\S]*?)<\/template>/);
-    const styleMatch = sourceCode.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+    const scriptMatch = sourceCode.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i);
+    const templateMatch = sourceCode.match(/<template[^>]*>([\s\S]*?)<\/template\s*>/i);
+    const styleMatch = sourceCode.match(/<style[^>]*>([\s\S]*?)<\/style\s*>/i);
 
     if (scriptMatch) {
       vueScriptContent = scriptMatch[1];
@@ -111,7 +111,7 @@ export function generateJSDoc(filePath: string): void {
   // For Vue files, reconstruct the SFC structure
   if (isVueFile) {
     const originalFileContent = fs.readFileSync(filePath, "utf-8");
-    const scriptMatch = originalFileContent.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+    const scriptMatch = originalFileContent.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i);
     
     if (scriptMatch) {
       const scriptTag = scriptMatch[0];
